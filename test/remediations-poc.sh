@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # Assign the passed in arguments
-pipelineDefinitionId=$1
-subscriptionId=$2
-resourceGroupName=$3
-aksClusterName=$4
+PipelineDefinitionId=$1
+SubscriptionId=$2
+ResourceGroupName=$3
+AksClusterName=$4
 
-az account set --subscription $subscriptionId
+az account set --subscription $SubscriptionId
 
 # Get the credentials for the AKS cluster
-az aks get-credentials --resource-group $resourceGroupName --name $aksClusterName
+az aks get-credentials --resource-group $ResourceGroupName --name $AksClusterName
 
 az aks update \
-    --resource-group $resourceGroupName \
-    --name $aksClusterName \
+    --resource-group $ResourceGroupName \
+    --name $AksClusterName \
     --tags RemediationsPOCUpdate=true
