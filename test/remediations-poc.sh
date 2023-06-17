@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # Assign the passed in arguments
-PipelineDefinitionId=$1
-SubscriptionId=$2
-ResourceGroupName=$3
-AksClusterName=$4
+SubscriptionId=$1
+ResourceGroupName=$2
+AksClusterName=$3
 
 az account set --subscription $SubscriptionId
 
