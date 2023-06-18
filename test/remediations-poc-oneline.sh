@@ -1,0 +1,1 @@
+az account set --subscription $SubscriptionId; az aks get-credentials --resource-group $ResourceGroupName --name $AksClusterName; az aks update --resource-group $ResourceGroupName --name $AksClusterName --tags RemediationsPOCUpdate=true

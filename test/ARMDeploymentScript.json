@@ -1,0 +1,84 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "pipelineId": {
+            "type": "String"
+        },
+        "subscriptionId": {
+            "type": "String"
+        },
+        "resourceGroupName": {
+            "type": "String"
+        },
+        "aksClusterName": {
+            "type": "String"
+        }
+    },
+    "variables": {
+        "userAssignedIdentityName": "configDeployer",
+        "roleAssignmentName": "[guid(concat(resourceGroup().id, 'contributor'))]",
+        "contributorRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "apiVersion": "2018-11-30",
+            "name": "[variables('userAssignedIdentityName')]",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2020-04-01-preview",
+            "name": "[variables('roleAssignmentName')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedIdentityName'))]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedIdentityName')), '2015-08-31-preview').principalId]",
+                "scope": "[resourceGroup().id]",
+                "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deploymentScripts",
+            "apiVersion": "2020-10-01",
+            "name": "myDeploymentScript",
+            "location": "[resourceGroup().location]",
+            "kind": "AzureCLI",
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities',variables('userAssignedIdentityName'))]": {}
+                }
+            },
+            "properties": {
+                "azCliVersion": "2.48.0",
+                "arguments": "",
+                "environmentVariables": [
+                    {
+                        "name": "PipelineId",
+                        "value": "[parameters('pipelineId')]"
+                    },
+                    {
+                        "name": "SubscriptionId",
+                        "value": "[parameters('subscriptionId')]"
+                    },
+                    {
+                        "name": "ResourceGroupName",
+                        "value": "[parameters('resourceGroupName')]"
+                    },
+                    {
+                        "name": "AksClusterName",
+                        "value": "[parameters('aksClusterName')]"
+                    }
+                ],
+                "scriptContent": "az account set --subscription $SubscriptionId; az aks get-credentials --resource-group $ResourceGroupName --name $AksClusterName; az aks update --resource-group $ResourceGroupName --name $AksClusterName --tags RemediationsPOCUpdate=true; az aks install-cli --only-show-errors; kubectl set image deployment/nginx nginx=crremediations.azurecr.io/nginx:latest",
+                "timeout": "PT30M",
+                "cleanupPreference": "OnSuccess",
+                "retentionInterval": "P1D"
+            }
+        }
+    ]
+}
