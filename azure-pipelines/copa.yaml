@@ -75,7 +75,7 @@ stages:
         - checkout: self
         - task: Docker@2
           inputs:
-            containerRegistry: RemediationsPOCConnection
+            containerRegistry: RemediationsConnection
             command: login
 
         - script: |
