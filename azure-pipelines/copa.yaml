@@ -70,3 +70,15 @@ stages:
             targetPath: $(System.DefaultWorkingDirectory)/patched-image.tar
             artifactName: patched
           displayName: Upload patched image as a pipeline artifact
+    - job: publishACR
+      steps:
+        - checkout: self
+        - task: Docker@2
+          inputs:
+            containerRegistry: RemediationsPOCConnection
+            command: login
+
+        - script: |
+            docker load -i $(System.DefaultWorkingDirectory)/patched-image.tar
+            docker tag $repo:$tag-patched crremediations.azurecr.io/patched-image:latest
+            docker push crremediations.azurecr.io/patched-image:latest
