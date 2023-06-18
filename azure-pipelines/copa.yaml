@@ -77,6 +77,5 @@ stages:
 
         - script: |
             docker load -i $(System.DefaultWorkingDirectory)/patched-image.tar
-            docker tag $repo:$tag-patched crremediations.azurecr.io/nginx:latest
             docker push crremediations.azurecr.io/nginx:latest
           displayName: PublishACR
