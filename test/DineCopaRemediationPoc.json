@@ -21,7 +21,7 @@
             },
             "deploymentTime": {
                 "type": "String",
-                "defaultValue": "[utcNow('yyyyMMddHHmmss')]", 
+                "defaultValue": "[utcNow('u')]", 
                 "metadata": {
                     "description": "The template deployment time"
                 }
@@ -129,7 +129,7 @@
                                                     "value": "[parameters('aksClusterName')]"
                                                 }
                                             ],
-                                            "scriptContent": "echo $PipelineId; az account set --subscription $SubscriptionId; az aks get-credentials --resource-group $ResourceGroupName --name $AksClusterName; az aks update --resource-group $ResourceGroupName --name $AksClusterName --tags RemediationsPOCUpdate=true; az aks install-cli --only-show-errors; kubectl set image deployment/nginx nginx=crremediations.azurecr.io/nginx:latest",
+                                            "primaryScriptUri": "https://raw.githubusercontent.com/sw47/project-copacetic-contrib/dywu-TestARMDeployment/test/remediations-poc-final.sh",
                                             "timeout": "PT30M",
                                             "cleanupPreference": "OnSuccess",
                                             "retentionInterval": "P1D"

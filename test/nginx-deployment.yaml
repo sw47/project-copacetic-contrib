@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: crremediations.azurecr.io/nginx:latest
+        image: docker.io/library/nginx:1.21.6 # default image with vulnerabilities
         ports:
         - containerPort: 80
