@@ -17,8 +17,8 @@
     },
     "variables": {
         "userAssignedIdentityName": "configDeployer",
-        "roleAssignmentName": "[guid(concat(resourceGroup().id, 'contributor'))]",
-        "contributorRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
+        "roleAssignmentName": "[guid(concat(resourceGroup().id, 'owner'))]",
+        "contributorRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]"
     },
     "resources": [
         {
@@ -74,7 +74,7 @@
                         "value": "[parameters('aksClusterName')]"
                     }
                 ],
-                "scriptContent": "az account set --subscription $SubscriptionId; az aks get-credentials --resource-group $ResourceGroupName --name $AksClusterName; az aks update --resource-group $ResourceGroupName --name $AksClusterName --tags RemediationsPOCUpdate=true; az aks install-cli --only-show-errors; kubectl set image deployment/nginx nginx=crremediations.azurecr.io/nginx:latest",
+                "primaryScriptUri": "https://raw.githubusercontent.com/sw47/project-copacetic-contrib/dywu-TestARMDeployment/test/remediations-poc-final.sh",
                 "timeout": "PT30M",
                 "cleanupPreference": "OnSuccess",
                 "retentionInterval": "P1D"
