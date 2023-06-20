@@ -76,7 +76,8 @@ stages:
             command: login
 
         - script: |
+            TAG=$(date -u +'%Y-%m-%dT%H-%M-%S')
             docker load -i $(System.DefaultWorkingDirectory)/patched-image.tar
-            docker tag nginx:1.21.6-patched crremediations.azurecr.io/nginx:latest
-            docker push crremediations.azurecr.io/nginx:latest
+            docker tag nginx:1.21.6-patched crremediations.azurecr.io/nginx:patched-$TAG
+            docker push crremediations.azurecr.io/nginx:patched-$TAG
           displayName: PublishACR
