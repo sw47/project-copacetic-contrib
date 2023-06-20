@@ -31,6 +31,7 @@ IMAGE_NAME=nginx
 # Get the latest tag
 LATEST_TAG=$(az acr repository show-tags --name $ACR_NAME --repository $IMAGE_NAME --orderby time_desc --top 1 -o "tsv")
 echo "crremediations.azurecr.io/nginx:$LATEST_TAG"
+
 #kubectl set image deployment/nginx-deployment nginx=crremediations.azurecr.io/nginx:$LATEST_TAG
 
 #echo $LATEST_TAG
