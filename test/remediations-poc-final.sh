@@ -17,6 +17,6 @@ az aks install-cli --only-show-errors
 az aks update -n $AksClusterName -g $ResourceGroupName --attach-acr "crremediations"
 
 # Get the latest tag
-LATEST_TAG=$(az acr repository show-tags --name $ACR_NAME --repository $IMAGE_NAME --orderby time_desc --top 1 -o "tsv")
+LATEST_TAG=$(az acr repository show-tags --name "crremediations" --repository "nginx" --orderby time_desc --top 1 -o "tsv")
 
 kubectl set image deployment/nginx-deployment nginx=crremediations.azurecr.io/nginx:$LATEST_TAG
