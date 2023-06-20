@@ -119,7 +119,8 @@
                                                 },
                                                 {
                                                     "name": "SubscriptionId",
-                                                    "value": "[parameters('subscriptionId')]"                                                },
+                                                    "value": "[parameters('subscriptionId')]"                                                
+                                                },
                                                 {
                                                     "name": "ResourceGroupName",
                                                     "value": "[parameters('resourceGroupName')]"

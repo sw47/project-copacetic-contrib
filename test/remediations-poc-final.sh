@@ -25,4 +25,4 @@ az aks update -n $AksClusterName -g $ResourceGroupName --attach-acr "crremediati
 LATEST_TAG=$(az acr repository show-tags --name "crremediations" --repository "nginx" --orderby time_desc --top 1 -o "tsv")
 
 # TODO -  
-kubectl set image deployment/nginx-deployment nginx=crremediations.azurecr.io/nginx:$LATEST_TAG
+kubectl set image deployment/nginx-deployment "nginx=crremediations.azurecr.io/nginx:$LATEST_TAG"
