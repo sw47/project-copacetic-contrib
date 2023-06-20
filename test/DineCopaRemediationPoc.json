@@ -1,29 +1,53 @@
 {
     "properties": {
-        "displayName": "Deploy network watcher when virtual networks are created",
+        "displayName": "Deploy RemedationsPOC if the tag does not exist",
         "mode": "Indexed",
-        "description": "This policy creates a network watcher resource in regions with virtual networks. You need to ensure existence of a resource group named networkWatcherRG, which will be used to deploy network watcher instances.",
+        "description": "This policy deploys the custom RemediationsPOC deployment script if the RemediationPOC tag does not exist on the AKS Cluster",
         "metadata": {
-            "category": "Network"
+            "category": "Kubernetes"
         },
-        "parameters": {},
+        "parameters": {
+            "tagName": {
+                "type": "String",
+                "metadata": {
+                    "description": "The remedationsPOC tag name."
+                }
+            }, 
+            "pipelineId": {
+                "type": "String",
+                "metadata": {
+                    "description": "The build ADO PipelineId"
+                }
+            },
+            "deploymentTime": {
+                "type": "String",
+                "defaultValue": "[utcNow('yyyyMMddHHmmss')]", 
+                "metadata": {
+                    "description": "The template deployment time"
+                }
+            }
+        },
         "policyRule": {
             "if": {
                 "field": "type",
-                "equals": "Microsoft.Network/virtualNetworks"
+                "equals": "Microsoft.ContainerService/managedClusters"
             },
             "then": {
                 "effect": "DeployIfNotExists",
                 "details": {
-                    "type": "Microsoft.Network/networkWatchers",
-                    "resourceGroupName": "networkWatcherRG",
-                    "existenceCondition": {
-                        "field": "location",
-                        "equals": "[field('location')]"
-                    },
+                    "type": "Microsoft.ContainerService/managedClusters",
+                    "name": "[field('name')]",
                     "roleDefinitionIds": [
-                        "/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7"
+                        "/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
                     ],
+                    "existenceCondition": {
+                        "allOf": [
+                            {
+                                "field": "[concat('tags[', parameters('tagName'), ']')]",
+                                "exists": true
+                            }
+                        ]
+                    },
                     "deployment": {
                         "properties": {
                             "mode": "incremental",
@@ -31,20 +55,103 @@
                                 "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
                                 "contentVersion": "1.0.0.0",
                                 "parameters": {
-                                    "location": {
+                                    "deploymentTime": {
+                                        "type": "string"
+                                    },
+                                    "pipelineId": {
+                                        "type": "string"
+                                    },
+                                    "subscriptionId": {
+                                        "type": "string"
+                                    },
+                                    "resourceGroupName": {
+                                        "type": "string"
+                                    },
+                                    "aksClusterName": {
                                         "type": "string"
                                     }
                                 },
-                                "resources": [{
-                                    "apiVersion": "2016-09-01",
-                                    "type": "Microsoft.Network/networkWatchers",
-                                    "name": "[concat('networkWacher_', parameters('location'))]",
-                                    "location": "[parameters('location')]"
-                                }]
+                                "variables": {
+                                    "userAssignedIdentityName": "configDeployer",
+                                    "roleAssignmentName": "[guid(concat(resourceGroup().id, 'contributor'))]",
+                                    "contributorRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]"
+                                },
+                                "resources": [
+                                    {
+                                        "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+                                        "apiVersion": "2018-11-30",
+                                        "name": "[variables('userAssignedIdentityName')]",
+                                        "location": "[resourceGroup().location]"
+                                    },
+                                    {
+                                        "type": "Microsoft.Authorization/roleAssignments",
+                                        "apiVersion": "2020-04-01-preview",
+                                        "name": "[variables('roleAssignmentName')]",
+                                        "dependsOn": [
+                                            "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedIdentityName'))]"
+                                        ],
+                                        "properties": {
+                                            "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+                                            "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedIdentityName')), '2015-08-31-preview').principalId]",
+                                            "scope": "[resourceGroup().id]",
+                                            "principalType": "ServicePrincipal"
+                                        }
+                                    },
+                                    {
+                                        "type": "Microsoft.Resources/deploymentScripts",
+                                        "apiVersion": "2020-10-01",
+                                        "name": "[concat('remediationsDS-', parameters('deploymentTime'))]",
+                                        "location": "[resourceGroup().location]",
+                                        "kind": "AzureCLI",
+                                        "identity": {
+                                            "type": "UserAssigned",
+                                            "userAssignedIdentities": {
+                                                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities',variables('userAssignedIdentityName'))]": {}
+                                            }
+                                        },
+                                        "properties": {
+                                            "azCliVersion": "2.48.0",
+                                            "arguments": "",
+                                            "environmentVariables": [
+                                                {
+                                                    "name": "PipelineId",
+                                                    "value": "[parameters('pipelineId')]"
+                                                },
+                                                {
+                                                    "name": "SubscriptionId",
+                                                    "value": "[parameters('subscriptionId')]"                                                },
+                                                {
+                                                    "name": "ResourceGroupName",
+                                                    "value": "[parameters('resourceGroupName')]"
+                                                },
+                                                {
+                                                    "name": "AksClusterName",
+                                                    "value": "[parameters('aksClusterName')]"
+                                                }
+                                            ],
+                                            "scriptContent": "echo $PipelineId; az account set --subscription $SubscriptionId; az aks get-credentials --resource-group $ResourceGroupName --name $AksClusterName; az aks update --resource-group $ResourceGroupName --name $AksClusterName --tags RemediationsPOCUpdate=true; az aks install-cli --only-show-errors; kubectl set image deployment/nginx nginx=crremediations.azurecr.io/nginx:latest",
+                                            "timeout": "PT30M",
+                                            "cleanupPreference": "OnSuccess",
+                                            "retentionInterval": "P1D"
+                                        }
+                                    }
+                                ]
                             },
                             "parameters": {
-                                "location": {
-                                    "value": "[field('location')]"
+                                "deploymentTime": {
+                                    "value": "[parameters('deploymentTime')]"
+                                },
+                                "pipelineId": {
+                                    "value": "[parameters('pipelineId')]"
+                                },
+                                "subscriptionId": {
+                                    "value": "[subscription().subscriptionId]"
+                                },
+                                "resourceGroupName": {
+                                    "value": "[resourceGroup().name]"
+                                },
+                                "aksClusterName": {
+                                    "value": "[field('name')]"
                                 }
                             }
                         }
